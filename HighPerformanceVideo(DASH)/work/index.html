@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <title>Adaptive video codelab</title>
+
+  <link rel="stylesheet" href="css/main.css" />
+
+</head>
+
+<body>
+
+  <h1>Adaptive video</h1>
+
+  <video controls autoplay></video>
+  <script src="js/main.js"></script>
+  <script src="js/dist/shaka-player.compiled.js"></script>
+
+
+  <!-- <video autoplay controls poster="images/poster.jpg" type="video/webm">
+    <source src="video/bunny.mp4" type="video/mp4">
+    <source src="video/bunny.webm" type="video/webm">
+    <track label="Descriptions" src="track/track.vtt" />
+    <p>Sorry! Your browser doesn't support the video element.</p>
+  </video> -->
+  <div id="data"></div>
+  <script>
+    var videoElement = document.querySelector('video');
+    // to check if this video format is supported by the browser.
+    // usually answers are in the form - probably / maybe
+    // and a blank means NOT supported.
+    console.log('fubar', videoElement.canPlayType('fubar'));
+    console.log('webm', videoElement.canPlayType('video/webm'));
+    console.log('webm/vp8', videoElement.canPlayType('video/webm; codecs="vp8"'));
+
+    // to check what is the current video format being ussed by the browser.
+    console.log(videoElement.currentSrc);
+
+    // to get actual height and width of the video.
+    videoElement.onloadedmetadata = function () {
+      console.log(this.videoWidth);
+      console.log(this.videoHeight);
+    };
+
+
+    // using javascript to listen to video cues!
+    var videoElement = document.querySelector('video');
+    var textTrack = videoElement.textTracks[0]; // there's only one!
+
+    var data = document.getElementById('data');
+    textTrack.oncuechange = function () {
+      // 'this' is a textTrack
+      var cue = this.activeCues[0]; // assuming there is only one active cue
+      if (cue) {
+        console.log('cue is ', cue);
+        data.innerHTML = cue.startTime + '-' + cue.endTime + ': ' + cue.text +
+          '<br />' + data.innerHTML;
+        //  var obj = JSON.parse(cue.text); // cues can be data too :)
+      }
+    };
+
+  // more stuff 
+    /*
+    You can add data (such as json) to cues, then parse the value of the cues when the track cuechange event is fired.
+    Eg.  the track element can be used to synchronise video playback with the position of a map marker,
+    and make synchronised changes to DOM elements.
+    The position of the map marker changes corresponding to the current time of the video.
+     Time of day is overlaid on the video.
+    */
+
+
+    // More on Cue Events & Tracks
+    // 1.) https://www.html5rocks.com/en/tutorials/track/basics/#toc-cues-js
+    // 2.) Cue formatting ( cool effects with subtitles for UX ) - http://html5videoguide.net/presentations/WebVTT/#webvtt-positioning-example
+
+
+    // for media buffering
+    //  MediaSource Extensions API (MSE) - https://developer.mozilla.org/en-US/docs/Web/API/MediaSource
+    //  You can request segments of video using the Fetch API or XHR, then stitch the segments together and buffer them for a video element using MSE.
+
+  </script>
+
+  <!-- // DASH: Dynamic Adaptive Streaming over HTTPS -->
+  <script>
+    'use strict';
+
+    var manifestUri = 'https://storage.googleapis.com/shaka-demo-assets/sintel/dash.mpd';
+
+    // Install built-in polyfills to patch browser incompatibilities.
+    shaka.polyfill.installAll();
+
+    // Check to see if the browser supports the basic APIs Shaka needs.
+    // This is an asynchronous check.
+    shaka.Player.support().then(function (support) {
+      // This executes when the asynchronous check is complete.
+      if (support.supported) {
+        // Everything looks good!
+        initPlayer();
+      } else {
+        // This browser does not have the minimum set of APIs you need.
+        console.error('Browser not supported!');
+      }
+    });
+
+    function initPlayer() {
+      // Create a Player instance.
+      var video = document.querySelector('video');
+      var player = new shaka.Player(video);
+      player.configure({ preferredTextLanguage: 'en' });
+      // Add player to global scope so it's visible from the browser console
+      window.player = player;
+
+      // Listen for error events.
+      player.addEventListener('error', onErrorEvent);
+
+      // Try to load a manifest.
+      // This is an asynchronous process.
+      player.load(manifestUri).then(function () {
+        // This runs if the asynchronous load is successful.
+        console.log('The video has now been loaded!');
+      }).catch(onError);  // onError is executed if the asynchronous load fails.
+    }
+
+    function onErrorEvent(event) {
+      // Extract the shaka.util.Error object from the event.
+      onError(event.detail);
+    }
+
+    function onError(error) {
+      console.error('Error code', error.code, 'object', error);
+    }
+  </script>
+
+
+</body>
+
+</html>
